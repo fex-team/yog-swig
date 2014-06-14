@@ -25,7 +25,6 @@ module.exports = function (res, options) {
 
     tags.forEach(function (tag) {
         var t = require('./tags/' + tag);
-        console.log(tag);
         swig.setTag(tag, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
 
