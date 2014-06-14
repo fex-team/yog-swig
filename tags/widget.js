@@ -49,8 +49,6 @@ exports.parse = function (str, line, parser, types, stack, opts) {
   var file, w;
   parser.on(types.STRING, function (token) {
     
-    console.log(token);
-
     if (!file) {
       file = token.match;
       this.out.push(file);
