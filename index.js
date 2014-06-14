@@ -19,7 +19,8 @@ module.exports = function (res, options) {
         "body",
         "require",
         "uri",
-        "widget"
+        "widget",
+        "head"
     ];
 
     tags.forEach(function (tag) {
