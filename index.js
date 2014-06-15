@@ -22,7 +22,7 @@ module.exports = function (res, options) {
 
     Swig.prototype._compileFile = function (id, w_args, opt) {
         opt.resolveFrom = '';
-        var p = path.join(options['viewdir'], res.fis.getUri(id));
+        var p = path.join(options['viewdir'], res.fis.load(id));
         return this.compileFile(p, opt);
     };
 
