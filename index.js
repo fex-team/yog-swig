@@ -7,7 +7,13 @@ var path = require('path');
 
 module.exports = function (res, options) {
     
-    options = options || {};
+    if (!res.fis) {
+        throw new Error('must `yog-resource-api` is loaded.');
+    }
+
+    if (!options || !options['viewdir']) {
+        throw new Error('must set `options.viewdir`.');
+    }
 
     //add responseWriter to the context of swig.
     Swig.prototype._r = function () {
