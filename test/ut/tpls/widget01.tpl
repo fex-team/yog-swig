@@ -1,0 +1,3 @@
+<div>
+A widget
+</div>

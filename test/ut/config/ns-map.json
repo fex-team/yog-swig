@@ -1,0 +1,19 @@
+{
+    "res": {
+        "ns:static/mod.js": {
+            "uri": "/static/ns/mod.js",
+            "type": "js"
+        },
+        "ns:static/test.js": {
+            "uri": "/static/ns/test.js",
+            "type": "js"
+        },
+        "ns:widget/widget01.tpl": {
+            "uri": "/widget01.tpl",
+            "type": "tpl"
+        }
+    },
+    "pkg": {
+
+    }
+}
