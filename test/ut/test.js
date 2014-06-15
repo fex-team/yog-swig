@@ -8,5 +8,9 @@ var swig = Swig(r, {
     viewdir: __dirname + '/tpls'
 });
 
-console.log(swig.renderFile(__dirname + '/tpls/test01.tpl'));
+console.log(swig.renderFile(__dirname + '/tpls/test01.tpl', {
+    obj_var: {
+        title: 'it\'s a widget'
+    }
+}));
 console.log(r);
