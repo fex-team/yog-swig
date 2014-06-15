@@ -4,7 +4,9 @@ var r = {
     fis: new rApi.ResourceApi(__dirname + '/config')
 }
 
-var swig = Swig(r);
+var swig = Swig(r, {
+    viewdir: __dirname + '/tpls'
+});
 
 console.log(swig.renderFile(__dirname + '/tpls/test01.tpl'));
 console.log(r);

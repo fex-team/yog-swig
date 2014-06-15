@@ -3,11 +3,21 @@
  */
 
 var Swig = require('swig').Swig;
-
+var path = require('path');
 
 module.exports = function (res, options) {
+    
+    options = options || {};
+
+    //add responseWriter to the context of swig.
     Swig.prototype._r = function () {
         return res;
+    };
+
+    Swig.prototype._compileFile = function (id, w_args, opt) {
+        opt.resolveFrom = '';
+        var p = path.join(options['viewdir'], res.fis.getUri(id));
+        return this.compileFile(p, opt);
     };
 
     var swig = new Swig(options);
