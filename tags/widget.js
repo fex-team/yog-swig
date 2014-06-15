@@ -40,16 +40,16 @@ exports.compile = function(compiler, args) {
         w = args.filter(function(o) {
             return !o.k;
         }).join(' '),
-        w_args = {};
+        wArgs = {};
 
     args.map(function(w) {
-        if (w.k) w_args[w.k] = w.v;
+        if (w.k) wArgs[w.k] = w.v;
     });
 
     return (ignore ? '  try {\n' : '') +
-        '_output += _swig._compileFile(' + file + ',' + JSON.stringify(w_args) + ', {' +
+        '_output += _swig._compileFile(' + file + ',' + JSON.stringify(wArgs) + ', {' +
         'resolveFrom: "' + parentFile + '"' +
-        '})(' +
+        '}, ' +
         ((onlyCtx && w) ? w : (!w ? '_ctx' : '_utils.extend({}, _ctx, ' + w + ')')) +
         ');\n' +
         (ignore ? '} catch (e) {}\n' : '');

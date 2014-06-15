@@ -20,10 +20,16 @@ module.exports = function (res, options) {
         return res;
     };
 
-    Swig.prototype._compileFile = function (id, w_args, opt) {
+    /**
+     * @param {string} id   the ID of `map.json` of FIS
+     * @param {object} wArgs  if invoke a widget {%widget 'test.tpl' id='a' mode="async" group='g' %}, wArgs equal {id: 'a', mode:'async', group:'g'}
+     * @param {object} opt  render needed options
+     * @param {object} data render `template` needed data
+     */
+    Swig.prototype._compileFile = function (id, wArgs, opt, data) {
         opt.resolveFrom = '';
         var p = path.join(options['viewdir'], res.fis.load(id));
-        return this.compileFile(p, opt);
+        return this.compileFile(p, opt)(data);
     };
 
     var swig = new Swig(options);
