@@ -1,7 +1,7 @@
 var ignore = 'ignore',
     missing = 'missing',
     only = 'only',
-    id = "id",
+    id = "pagelet_id",
     group = "group",
     mode = "mode";
 
@@ -18,7 +18,7 @@ var ignore = 'ignore',
  *
  * @example
  * // my_obj = { food: 'tacos', drink: 'horchata' };
- * {% widget "./partial.html" id="pagelet_id" mode="async" with my_obj%}
+ * {% widget "./partial.html" pagelet_id="pagelet_id" mode="async" with my_obj%}
  * // => I like tacos and horchata.
  *
  * @example
