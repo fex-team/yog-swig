@@ -3,10 +3,8 @@ var exports = module.exports;
 exports.compile = function(compiler, args, content, parents, options, blockName) {
     content.unshift('<html>');
     content.push('</html>');
-    var code = 'var _res = _swig._r(); _res.fis.framework = _res.fis.getUri(' + args.pop() + ');' + 
-        '_output += _res.fis.render((function() { var _output = "";' +
-        compiler(content, parents, options, blockName) +
-        'return _output;})());';
+    var code = '_ctx._yog.setFramework(_ctx._yog.getUri(' + args.pop() + '));' +
+        compiler(content, parents, options, blockName);
     return code;
 };
 

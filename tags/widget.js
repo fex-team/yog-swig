@@ -47,7 +47,7 @@ exports.compile = function(compiler, args) {
     });
 
     return (ignore ? '  try {\n' : '') +
-        '_output += _swig._compileFile(' + file + ',' + JSON.stringify(w_args) + ', {' +
+        '_output += _swig._w(_ctx._yog, '+ file+',' + JSON.stringify(w_args) + ', {' +
         'resolveFrom: "' + parentFile + '"' +
         '})(' +
         ((onlyCtx && w) ? w : (!w ? '_ctx' : '_utils.extend({}, _ctx, ' + w + ')')) +

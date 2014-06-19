@@ -2,18 +2,18 @@ var exports = module.exports;
 
 /**
  * trigger the load of FIS, it means add a js/css file to the page.
- * 
+ *
  * @alias require
- * 
+ *
  * @example
  * // if `namespace` = `user`
  * // load mod.js
  * {%require "user:static/mod.js"%}
- * 
+ *
  * @param {string|var} id  the resource `id` of the FIS system.
  */
 exports.compile = function(compiler, args, content, parents, options, blockName) {
-    var code = 'var _res = _swig._r(); _res.fis.load(' + args.pop() + ');'
+    var code = '_ctx._yog.load(' + args.pop() + ');'
     return code;
 };
 

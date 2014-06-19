@@ -3,46 +3,82 @@
  */
 
 var Swig = require('swig').Swig;
-var path = require('path');
+var util = require("util");
+var EventEmitter = require("events").EventEmitter;
+var tags  = [
+    "script",
+    "style",
+    "html",
+    "body",
+    "require",
+    "uri",
+    "widget",
+    "head"
+];
 
-module.exports = function (res, options) {
-    
-    if (!res.fis) {
-        throw new Error('must `yog-resource-api` is loaded.');
+
+Swig.prototype._w = Swig.prototype._widget = function(api, id, attr, options) {
+    var self = this;
+    var pathname = api.resolve(id);
+
+    if (!api.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
+        api.load(id);
+        return this.compileFile(pathname, options);
     }
 
-    if (!options || !options['viewdir']) {
-        throw new Error('must set `options.viewdir`.');
+    return function(locals) {
+
+        api.addPagelet({
+            id: attr.id,
+            mode: attr.mode,
+            locals: locals,
+            view: pathname,
+            sourceId: id,
+
+            compiled: function(locals) {
+                var fn = self.compileFile(pathname, options);
+                locals._yog && locals._yog.load(id);
+                return fn.apply(this, arguments);
+            }
+        });
+
+        return '<div id="' + attr.id + '"></div>';
+    };
+}
+
+var SwigWrap = module.exports = function SwigWrap(options) {
+
+    if (!(this instanceof SwigWrap)) {
+        return new SwigWrap(options);
     }
 
-    //add responseWriter to the context of swig.
-    Swig.prototype._r = function () {
-        return res;
-    };
+    var self = this;
+    var swig = this.swig = new Swig(options);
 
-    Swig.prototype._compileFile = function (id, w_args, opt) {
-        opt.resolveFrom = '';
-        var p = path.join(options['viewdir'], res.fis.load(id));
-        return this.compileFile(p, opt);
-    };
-
-    var swig = new Swig(options);
-
-    var tags  = [
-        "script",
-        "style",
-        "html",
-        "body",
-        "require",
-        "uri",
-        "widget",
-        "head"
-    ];
 
     tags.forEach(function (tag) {
         var t = require('./tags/' + tag);
         swig.setTag(tag, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
 
-    return swig;
+    EventEmitter.call(this);
+};
+
+util.inherits(SwigWrap, EventEmitter);
+
+SwigWrap.prototype.renderFile = function(path, data) {
+    var self = this;
+
+    this.swig.renderFile(path, data, function(err, output) {
+        if (err) {
+            return self.emit('error', error);
+        }
+
+        // 这里支持 chunk 输出内容。
+        // 可以先输出部分，如：
+        // self.emit('data', 'chunk content');
+        // self.emit('flush');
+
+        self.emit('end', output);
+    });
 };
