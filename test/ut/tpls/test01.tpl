@@ -8,6 +8,6 @@
         {%endscript%}
     {%endhead%}
     {%body%}
-        {%widget "ns:widget/widget01.tpl" id="widget01" mode="pipe" group="a" with obj_var%}
+        {%widget "ns:widget/widget01.tpl" pagelet_id="widget01" mode="pipe" group="a" with obj_var%}
     {%endbody%}
 {%endhtml%}
