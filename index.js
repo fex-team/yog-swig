@@ -46,7 +46,7 @@ Swig.prototype._w = Swig.prototype._widget = function(api, id, attr, options) {
     };
 }
 
-var SwigWrap = module.exports = function SwigWrap(options) {
+var SwigWrap = module.exports = function SwigWrap(options, api) {
 
     if (!(this instanceof SwigWrap)) {
         return new SwigWrap(options);
@@ -54,6 +54,12 @@ var SwigWrap = module.exports = function SwigWrap(options) {
 
     var self = this;
     var swig = this.swig = new Swig(options);
+
+    var origin = this.swig.options.loader.resolve;
+    this.swig.options.loader.resolve = function(to, from) {
+        to = api.resolve(to);
+        return origin.call(this, to, from);
+    };
 
 
     tags.forEach(function (tag) {
@@ -71,7 +77,7 @@ SwigWrap.prototype.renderFile = function(path, data) {
 
     this.swig.renderFile(path, data, function(err, output) {
         if (err) {
-            return self.emit('error', error);
+            return self.emit('error', err);
         }
 
         // 这里支持 chunk 输出内容。
