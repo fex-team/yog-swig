@@ -3,7 +3,7 @@ var exports = module.exports;
 exports.compile = function(compiler, args, content, parents, options, blockName) {
     content.unshift('<html>');
     content.push('</html>');
-    var code = '_ctx._yog.setFramework(_ctx._yog.getUri(' + args.pop() + '));' +
+    var code = '_ctx._yog.setFramework(' + args.pop() + ');' +
         compiler(content, parents, options, blockName);
     return code;
 };

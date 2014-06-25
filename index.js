@@ -5,6 +5,7 @@
 var Swig = require('swig').Swig;
 var util = require("util");
 var EventEmitter = require("events").EventEmitter;
+var loader = require('./lib/loader.js');
 var tags  = [
     "script",
     "style",
@@ -52,15 +53,10 @@ var SwigWrap = module.exports = function SwigWrap(options, api) {
         return new SwigWrap(options);
     }
 
+    options.loader = options.loader || loader(api, options.views);
+
     var self = this;
     var swig = this.swig = new Swig(options);
-
-    var origin = this.swig.options.loader.resolve;
-    this.swig.options.loader.resolve = function(to, from) {
-        to = api.resolve(to);
-        return origin.call(this, to, from);
-    };
-
 
     tags.forEach(function (tag) {
         var t = require('./tags/' + tag);
@@ -87,4 +83,10 @@ SwigWrap.prototype.renderFile = function(path, data) {
 
         self.emit('end', output);
     });
+};
+
+SwigWrap.prototype.destroy = function() {
+    this.emit('destroy');
+    this.removeAllListeners();
+    this.swig = null;
 };
