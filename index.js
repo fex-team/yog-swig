@@ -3,8 +3,6 @@
  */
 
 var Swig = require('swig').Swig;
-var util = require("util");
-var EventEmitter = require("events").EventEmitter;
 var loader = require('./lib/loader.js');
 var tags  = [
     "script",
@@ -62,31 +60,12 @@ var SwigWrap = module.exports = function SwigWrap(options, api) {
         var t = require('./tags/' + tag);
         swig.setTag(tag, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
-
-    EventEmitter.call(this);
 };
 
-util.inherits(SwigWrap, EventEmitter);
-
-SwigWrap.prototype.renderFile = function(path, data) {
-    var self = this;
-
-    this.swig.renderFile(path, data, function(err, output) {
-        if (err) {
-            return self.emit('error', err);
-        }
-
-        // 这里支持 chunk 输出内容。
-        // 可以先输出部分，如：
-        // self.emit('data', 'chunk content');
-        // self.emit('flush');
-
-        self.emit('end', output);
-    });
+SwigWrap.prototype.renderFile = function() {
+    return this.swig.renderFile.apply(this.swig, arguments);
 };
 
 SwigWrap.prototype.destroy = function() {
-    this.emit('destroy');
-    this.removeAllListeners();
     this.swig = null;
 };
