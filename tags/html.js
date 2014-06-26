@@ -1,11 +1,9 @@
 var exports = module.exports;
 
 exports.compile = function(compiler, args, content, parents, options, blockName) {
-    content.unshift('<html>');
-    content.push('</html>');
     var code = '_ctx._yog.setFramework(' + args.pop() + ');' +
         compiler(content, parents, options, blockName);
-    return code;
+    return '_output += "<html>";' + code + '_output += _ctx._yog.BIGPIPE_HOOK + "</html>";';
 };
 
 exports.parse = function(str, line, parser, types) {
