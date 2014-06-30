@@ -1,9 +1,7 @@
 var ignore = 'ignore',
     missing = 'missing',
     only = 'only',
-    id = "id",
-    group = "group",
-    mode = "mode";
+    attrs = ["id", "mode", "group", "for", "model"];
 
 /**
  * Includes a template partial in place. The template is rendered within the current locals variable context.
@@ -57,6 +55,7 @@ exports.compile = function(compiler, args) {
 
 exports.parse = function(str, line, parser, types, stack, opts) {
     var file, w, k;
+
     parser.on(types.STRING, function(token) {
 
         if (!file) {
@@ -70,8 +69,8 @@ exports.parse = function(str, line, parser, types, stack, opts) {
             k: ''
         };
 
-        if (k == id || k == group || k == mode) {
-            out.v = token.match.replace(/^['"]|['"]$/g, '');
+        if (~attrs.indexOf(k)) {
+            out.v = token.match.replace(/^("|')?(.*)\1$/g, '$2');
             out.k = k;
             this.out.push(out);
             v = ''; //reset
@@ -86,17 +85,7 @@ exports.parse = function(str, line, parser, types, stack, opts) {
             return true;
         }
 
-        if (token.match === id) {
-            k = token.match;
-            return false;
-        }
-
-        if (token.match === mode) {
-            k = token.match;
-            return false;
-        }
-
-        if (token.match === group) {
+        if (~attrs.indexOf(token.match)) {
             k = token.match;
             return false;
         }

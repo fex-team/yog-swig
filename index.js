@@ -28,6 +28,8 @@ Swig.prototype._w = Swig.prototype._widget = function(api, id, attr, options) {
     return function(locals) {
 
         api.addPagelet({
+            'for': attr['for'],
+            model: attr.model,
             id: attr.id,
             mode: attr.mode,
             locals: locals,
@@ -41,7 +43,7 @@ Swig.prototype._w = Swig.prototype._widget = function(api, id, attr, options) {
             }
         });
 
-        return '<div id="' + attr.id + '"></div>';
+        return attr['for'] ? '' : '<div id="' + attr.id + '"></div>';
     };
 }
 
