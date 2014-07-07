@@ -1,7 +1,9 @@
 /**
- * fis.baidu.com
+ * 此插件为 yog-view 的 swig 版本显现。
+ * 依赖 yog-view。
  */
-
+var Readable = require('stream').Readable;
+var util = require('util');
 var Swig = require('swig').Swig;
 var loader = require('./lib/loader.js');
 var tags  = [
@@ -15,59 +17,104 @@ var tags  = [
     "head"
 ];
 
-
-Swig.prototype._w = Swig.prototype._widget = function(api, id, attr, options) {
-    var self = this;
-    var pathname = api.resolve(id);
-
-    if (!api.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
-        api.load(id);
-        return this.compileFile(pathname, options);
-    }
-
-    return function(locals) {
-
-        api.addPagelet({
-            container: attr['container'] || attr['for'],
-            model: attr.model,
-            id: attr.id,
-            mode: attr.mode,
-            locals: locals,
-            view: pathname,
-            sourceId: id,
-
-            compiled: function(locals) {
-                var fn = self.compileFile(pathname, options);
-                locals._yog && locals._yog.load(id);
-                return fn.apply(this, arguments);
-            }
-        });
-
-        return attr['for'] ? '' : '<div id="' + attr.id + '"></div>';
-    };
-}
-
-var SwigWrap = module.exports = function SwigWrap(options, api) {
+/**
+ * Opitions 说明
+ * - `view` 模板文件
+ * - `locals` 模板变量
+ * - `views` 模板根目录
+ * - `loader` 模板加载器，默认自带，可选。
+ *
+ * layer 参数，为 yog-view 的中间层，用来扩展模板能力。
+ * 比如通过 addScript, addStyle 添加的 js/css 会自动在页面开头结尾处才输出。
+ *
+ * 更多细节请查看 yog-view
+ * 
+ * @return {Readable Stream} 
+ */
+var SwigWrap = module.exports = function SwigWrap(options, layer) {
 
     if (!(this instanceof SwigWrap)) {
         return new SwigWrap(options);
     }
 
-    options.loader = options.loader || loader(api, options.views);
+    // 重写 loader, 让模板引擎，可以识别静态资源标示。如：example:static/lib/jquery.js
+    options.loader = options.loader || loader(layer, options.views);
 
-    var self = this;
     var swig = this.swig = new Swig(options);
+    this.options = swig.options;
 
     tags.forEach(function (tag) {
         var t = require('./tags/' + tag);
         swig.setTag(tag, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
+
+    Readable.call(this, null);
+    this.buzy = false;
 };
 
-SwigWrap.prototype.renderFile = function() {
-    return this.swig.renderFile.apply(this.swig, arguments);
+util.inherits(SwigWrap, Readable);
+
+SwigWrap.prototype._read = function(n) {
+    if (!this.buzy && this.options.view) {
+        this.renderFile(this.options.view, this.options.locals);
+    }
+};
+
+// 不推荐直接调用
+// 最后在初始化 SwigWrap 的时候指定 view 已经 locals.
+// 此方法将会自动调用。
+SwigWrap.prototype.renderFile = function(view, options) {
+    var self = this;
+
+    if (this.buzy) return;
+    this.buzy = true;
+
+    // support chunk
+    this.swig.renderFile(view, options, function(error, output) {
+        if (error) {
+            return self.emit('error', error);
+        }
+
+        self.push(output);
+        self.push(null);
+    });
 };
 
 SwigWrap.prototype.destroy = function() {
     this.swig = null;
+    this.removeAllListeners();
+};
+
+// 这个方法在 tags/widget.js 中调用。
+Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) {
+    var self = this;
+    var pathname = layer.resolve(id);
+
+    if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
+        layer.load(id);
+        return this.compileFile(pathname, options);
+    }
+
+    return function(locals) {
+        var container = attr['container'] || attr['for'];
+
+        layer.addPagelet({
+            container: container,
+            model: attr.model,
+            id: attr.id,
+            mode: attr.mode,
+            locals: locals,
+            view: pathname,
+            viewId: id,
+
+            compiled: function(locals) {
+                var fn = self.compileFile(pathname, options);
+                var layer = locals._yog;
+                layer && layer.load(id);
+                return fn.apply(this, arguments);
+            }
+        });
+
+        return container ? '' : '<div id="' + attr.id + '"></div>';
+    };
 };
