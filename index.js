@@ -28,7 +28,7 @@ Swig.prototype._w = Swig.prototype._widget = function(api, id, attr, options) {
     return function(locals) {
 
         api.addPagelet({
-            'for': attr['for'],
+            container: attr['container'] || attr['for'],
             model: attr.model,
             id: attr.id,
             mode: attr.mode,
