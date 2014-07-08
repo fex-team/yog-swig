@@ -34,7 +34,12 @@ describe('tags', function () {
             'expect': '<body>test<!--FIS_JS_HOOK--></body>'
         },
         '/style': {
-            'tpl': '{%style%}alert("test");{%endstyle%}',
+            'tpl': '{%style%}body{}{%endstyle%}',
+            'isString': true,
+            'expect': ''
+        },
+        '/script': {
+            'tpl': '{%script%}console.log("fis");{%endscript%}',
             'isString': true,
             'expect': ''
         },
