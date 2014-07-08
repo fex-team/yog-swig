@@ -38,6 +38,10 @@ describe('tags', function () {
             'isString': true,
             'expect': ''
         },
+        '/widget': {
+            'tpl': 'include_widget_page.tpl',
+            'expect': 'widget'
+        },
         '/html_index.tpl': {
             'tpl': 'index.tpl',
             'expect': '<html>test<!--FIS_BIGPIPE_HOOK--></html>'
