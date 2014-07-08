@@ -34,7 +34,7 @@ var tags  = [
 var SwigWrap = module.exports = function SwigWrap(options, layer) {
 
     if (!(this instanceof SwigWrap)) {
-        return new SwigWrap(options);
+        return new SwigWrap(options, layer);
     }
 
     // 重写 loader, 让模板引擎，可以识别静态资源标示。如：example:static/lib/jquery.js
