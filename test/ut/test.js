@@ -43,6 +43,20 @@ describe('tags', function () {
             'isString': true,
             'expect': ''
         },
+        '/require': {
+            'tpl': '{%require "ns:static/mod.js"%}',
+            'isString': true,
+            'expect': '',
+            'cb': function (layer) {
+                var scripts = layer.getScripts();
+                expect(scripts).to.be.deep.equal({
+                    urls: [
+                        "/static/ns/mod.js"
+                    ],
+                    embed: []
+                });
+            }
+        },
         '/widget': {
             'tpl': 'include_widget_page.tpl',
             'expect': 'widget'
@@ -64,11 +78,15 @@ describe('tags', function () {
                 var protocol = layer(res.fis, res.bigpipe);
                 options.locals = {_yog: protocol};
                 var swig = wrap(options, protocol).swig;
+                var output = '';
                 if (itr['isString']) {
-                    res.end(swig.run(swig.compile(itr['tpl'])));
+                    output = swig.run(swig.compile(itr['tpl']));
                 } else {
-                    res.end(swig.renderFile(itr['tpl']));
+                    output = swig.renderFile(itr['tpl']);
                 }
+                if (itr['cb']) itr['cb'](protocol);
+                res.end(output);
+
             });
 
             it(key, function (done) {
