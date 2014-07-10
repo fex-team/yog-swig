@@ -16,7 +16,8 @@ var tags  = [
     "widget",
     "head",
     "feature",
-    "featureelse"
+    "featureelse",
+    "spage"
 ];
 
 /**
