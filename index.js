@@ -14,7 +14,9 @@ var tags  = [
     "require",
     "uri",
     "widget",
-    "head"
+    "head",
+    "feature",
+    "featureelse"
 ];
 
 /**
