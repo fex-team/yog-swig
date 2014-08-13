@@ -1,1 +1,1 @@
-{%html%}test{%endhtml%}
+{%html lang="en"%}test{%endhtml%}

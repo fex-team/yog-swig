@@ -29,9 +29,9 @@ describe('tags', function () {
             'expect': '<html>test<!--FIS_BIGPIPE_HOOK--></html>'
         },
         '/body': {
-            'tpl': '{%body%}test{%endbody%}',
+            'tpl': '{%body a="test" b="test01" d="xxx"%}test{%endbody%}',
             'isString': true,
-            'expect': '<body>test<!--FIS_JS_HOOK--></body>'
+            'expect': '<body a=\'test\' b=\'test01\' d=\'xxx\'>test<!--FIS_JS_HOOK--></body>'
         },
         '/style': {
             'tpl': '{%style%}body{}{%endstyle%}',
@@ -63,7 +63,7 @@ describe('tags', function () {
         },
         '/html_index.tpl': {
             'tpl': 'index.tpl',
-            'expect': '<html>test<!--FIS_BIGPIPE_HOOK--></html>'
+            'expect': '<html lang=\'en\'>test<!--FIS_BIGPIPE_HOOK--></html>'
         }
     };
 
