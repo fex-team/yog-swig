@@ -1,17 +1,19 @@
-var exports = module.exports;
+var ATTR = 'attrs';
 
 exports.compile = function(compiler, args, content, parents, options, blockName) {
     var code = (Object.prototype.toString.call(args[0]) === '[object String]' ? '_ctx._yog.setFramework(' + args.shift() + ');' : '') +
         compiler(content, parents, options, blockName);
     var attrs = '';
     args.forEach(function (attr) {
-        attrs += attr.k + '=' + attr.v.replace(/"/g, '\'') + ' ';
+        if (attr.k == 'attrs') {
+            attrs = attr.v.replace(/"/g, "\\\"");
+        }
     });
     return '_output += "<html' + (attrs == '' ? '' : ' ' + attrs.trim()) + '>";' + code + '_output += _ctx._yog.BIGPIPE_HOOK + "</html>";';
 };
 
 exports.parse = function(str, line, parser, types) {
-    var k, framework;
+    var k;
 
     parser.on(types.STRING, function(token) {
         if (typeof k == 'undefined') {
@@ -25,20 +27,9 @@ exports.parse = function(str, line, parser, types) {
 
         this.out.push({
             k: k,
-            v: token.match
+            v: token.match.replace(/^["']|["']$/g, '')
         });
 
-        k = '';
-    });
-
-    parser.on(types.NUMBER, function (token) {
-        if (k === '') {
-            throw new Error('Unexpected on line ' + line + '.');
-        }
-        this.out.push({
-            k: k,
-            v: token.match
-        });
         k = '';
     });
 

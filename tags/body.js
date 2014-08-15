@@ -1,5 +1,4 @@
-var exports = module.exports;
-
+var ATTR = 'attrs';
 /**
  * @alias body
  * @example
@@ -9,8 +8,11 @@ var exports = module.exports;
 exports.compile = function(compiler, args, content, parents, options, blockName) {
     var attrs = '';
     args.forEach(function (attr) {
-        attrs += attr.k + '=' + attr.v.replace(/"/g, '\'') + ' ';
+        if (attr.k === ATTR) {
+            attrs = attr.v.replace(/"/g, "\\\"");
+        }
     });
+
     var code = compiler(content, parents, options, blockName);
     return '_output += "<body'+ (attrs == '' ? '' : ' ' + attrs.trim()) +'>";' + code + '_output += _ctx._yog.JS_HOOK + "</body>";';
 };
@@ -21,20 +23,10 @@ exports.parse = function(str, line, parser, types, stack, opts) {
         if (k === '') {
             throw new Error('Unexpected on line ' + line + '.');
         }
-        this.out.push({
-            k: k,
-            v: token.match
-        });
-        k = '';
-    });
 
-    parser.on(types.NUMBER, function (token) {
-        if (k === '') {
-            throw new Error('Unexpected on line ' + line + '.');
-        }
         this.out.push({
             k: k,
-            v: token.match
+            v: token.match.replace(/^["']|["']$/g, '')
         });
         k = '';
     });
