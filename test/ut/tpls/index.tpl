@@ -1,1 +1,1 @@
-{%html lang="en"%}test{%endhtml%}
+{%html attrs='lang="en"'%}test{%endhtml%}
