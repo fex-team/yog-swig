@@ -1,42 +1,63 @@
-var ATTR = 'attrs';
-
 exports.compile = function(compiler, args, content, parents, options, blockName) {
-    var code = (Object.prototype.toString.call(args[0]) === '[object String]' ? '_ctx._yog.setFramework(' + args.shift() + ');' : '') +
-        compiler(content, parents, options, blockName);
-    var attrs = '';
-    args.forEach(function (attr) {
-        if (attr.k == 'attrs') {
-            attrs = attr.v.replace(/"/g, "\\\"");
+    var attrs = [];
+    var framework;
+
+    args.forEach(function(arg) {
+        if (!arg.key) {
+            return;
+        } else if (arg.key === "framework") {
+            framework = arg.value;
+            return;
+        } else if (arg.key === "attrs") {
+            attrs.push(arg.value);
+        } else {
+            attrs.push(arg.key + "=" + arg.raw);
         }
     });
-    return '_output += "<html' + (attrs == '' ? '' : ' ' + attrs.trim()) + '>";' + code + '_output += _ctx._yog.BIGPIPE_HOOK + "</html>";';
+
+    var code = (framework ? '_ctx._yog.setFramework("' + framework + '");' : '') + compiler(content, parents, options, blockName);
+    return '_output += "<html ' + (attrs.join(' ').replace(/"/g, "\\\"")) + '>";' + code + '_output += _ctx._yog.BIGPIPE_HOOK + "</html>";';
 };
 
 exports.parse = function(str, line, parser, types) {
-    var k;
+    var key = '',
+        assign;
 
     parser.on(types.STRING, function(token) {
-        if (typeof k == 'undefined') {
-            this.out.push(token.match);
-            return false;
+        if (key && assign) {
+            var raw = token.match;
+            var val = raw.substring(1, raw.length - 1);
+
+            this.out.push({
+                key: key,
+                value: val,
+                raw: raw
+            });
+
+            key = assign = '';
         }
+    });
 
-        if (k === '') {
-            throw new Error('Unexpected on line ' + line + '.');
+    parser.on(types.ASSIGNMENT, function(token) {
+        if (token.match === "=") {
+            assign = true;
         }
+    });
 
-        this.out.push({
-            k: k,
-            v: token.match.replace(/^["']|["']$/g, '')
-        });
+    parser.on(types.NUMBER, function(token) {
+        var val = token.match;
 
-        k = '';
+        if (val && /^\-/.test(val) && key) {
+            key += val;
+        }
     });
 
     parser.on(types.VAR, function(token) {
-        k = token.match;
+        key += token.match;
+        assign = false;
         return false;
     });
+
     return true;
 };
 
