@@ -52,6 +52,14 @@ exports.parse = function(str, line, parser, types) {
         }
     });
 
+    parser.on(types.OPERATOR, function(token) {
+        var val = token.match;
+
+        if (val === '-' && key) {
+            key += val;
+        }
+    });
+
     parser.on(types.VAR, function(token) {
         key += token.match;
         assign = false;
