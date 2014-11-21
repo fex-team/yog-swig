@@ -19,11 +19,10 @@ var tags  = [
     "featureelse",
     "spage"
 ];
+var swigInstance;
 
 /**
  * Opitions 说明
- * - `view` 模板文件
- * - `locals` 模板变量
  * - `views` 模板根目录
  * - `loader` 模板加载器，默认自带，可选。
  *
@@ -31,8 +30,8 @@ var tags  = [
  * 比如通过 addScript, addStyle 添加的 js/css 会自动在页面开头结尾处才输出。
  *
  * 更多细节请查看 yog-view
- * 
- * @return {Readable Stream} 
+ *
+ * @return {Readable Stream}
  */
 var SwigWrap = module.exports = function SwigWrap(options, layer) {
 
@@ -43,7 +42,7 @@ var SwigWrap = module.exports = function SwigWrap(options, layer) {
     // 重写 loader, 让模板引擎，可以识别静态资源标示。如：example:static/lib/jquery.js
     options.loader = options.loader || loader(layer, options.views);
 
-    var swig = this.swig = new Swig(options);
+    var swig = this.swig = swigInstance = options.cache && swigInstance || new Swig(options);
     this.options = swig.options;
 
     tags.forEach(function (tag) {
@@ -51,16 +50,23 @@ var SwigWrap = module.exports = function SwigWrap(options, layer) {
         swig.setTag(tag, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
 
-    Readable.call(this, null);
+
     this.buzy = false;
 };
 
 util.inherits(SwigWrap, Readable);
 
 SwigWrap.prototype._read = function(n) {
-    if (!this.buzy && this.options.view) {
-        this.renderFile(this.options.view, this.options.locals);
+    if (!this.buzy && this.view) {
+        this.renderFile(this.view, this.locals);
     }
+};
+
+SwigWrap.prototype.makeStream = function(view, locals) {
+    Readable.call(this, null);
+    this.view = view;
+    this.locals = locals;
+    return this;
 };
 
 // 不推荐直接调用
