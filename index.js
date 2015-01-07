@@ -6,6 +6,7 @@ var Readable = require('stream').Readable;
 var util = require('util');
 var Swig = require('swig').Swig;
 var loader = require('./lib/loader.js');
+var debuglog = require('debuglog')('yog-swig');
 var tags  = [
     "script",
     "style",
@@ -19,6 +20,7 @@ var tags  = [
     "featureelse",
     "spage"
 ];
+
 var swigInstance;
 
 /**
@@ -33,74 +35,78 @@ var swigInstance;
  *
  * @return {Readable Stream}
  */
-var SwigWrap = module.exports = function SwigWrap(options, layer) {
+var SwigWrap = module.exports = function SwigWrap(app, options) {
 
-    if (!(this instanceof SwigWrap)) {
-        return new SwigWrap(options, layer);
+    if (swigInstance){
+        debuglog('use swig instance cache');
+        this.swig = swigInstance;
+        return;
     }
 
+    debuglog('init swig instance');
+
+    options = options || {};
+
     // 重写 loader, 让模板引擎，可以识别静态资源标示。如：example:static/lib/jquery.js
-    options.loader = options.loader || loader(layer, options.views);
+    options.loader = options.loader || loader(app, options.views, options.encoding);
 
-    var swig = this.swig = swigInstance = options.cache && swigInstance || new Swig(options);
-    this.options = swig.options;
+    var swig = this.swig = swigInstance = new Swig(options);
 
-    tags.forEach(function (tag) {
+    // 加载内置扩展
+    tags.forEach(function (tag){
         var t = require('./tags/' + tag);
         swig.setTag(tag, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
 
-
-    this.buzy = false;
-};
-
-util.inherits(SwigWrap, Readable);
-
-SwigWrap.prototype._read = function(n) {
-    if (!this.buzy && this.view) {
-        this.renderFile(this.view, this.locals);
-    }
+    // 加载用户扩展
+    options.tags && Object.keys(options.tags).forEach(function (name){
+        var t = options.tags[name];
+        swig.setTag(name, t.parse, t.compile, t.ends, t.blockLevel || false);
+    });
 };
 
 SwigWrap.prototype.makeStream = function(view, locals) {
-    Readable.call(this, null);
-    this.view = view;
-    this.locals = locals;
-    return this;
+    debuglog('create [%s] render stream', view);
+    return new EngineStream(this.swig, view, locals);
 };
 
-// 不推荐直接调用
-// 最后在初始化 SwigWrap 的时候指定 view 已经 locals.
-// 此方法将会自动调用。
-SwigWrap.prototype.renderFile = function(view, options) {
+var EngineStream = function(swig, view, locals){
+    this.swig = swig;
+    this.view = view;
+    this.locals = locals;
+    this.reading = false;
+    Readable.call(this);
+};
+
+util.inherits(EngineStream, Readable);
+
+EngineStream.prototype._read = function() {
     var self = this;
-
-    if (this.buzy) return;
-    this.buzy = true;
-
-    // support chunk
-    this.swig.renderFile(view, options, function(error, output) {
+    var state = self._readableState;
+    if (this.reading){
+        return;
+    }
+    this.reading = true;
+    debuglog('start render [%s]', this.view);
+    this.swig.renderFile(this.view, this.locals, function(error, output) {
         if (error) {
+            debuglog('render [%s] failed', self.view);
             return self.emit('error', error);
         }
-
+        debuglog('render [%s] succ', self.view);
         self.push(output);
         self.push(null);
     });
 };
 
-SwigWrap.prototype.destroy = function() {
-    this.swig = null;
-    this.removeAllListeners();
-};
-
-// 这个方法在 tags/widget.js 中调用。
+// 扩展swig内置函数，用于提供bigpipe支持
 Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) {
     var self = this;
     var pathname = layer.resolve(id);
 
+    layer.load(id);
+    
     if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
-        layer.load(id);
         return this.compileFile(pathname, options);
     }
 
@@ -119,7 +125,6 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
             compiled: function(locals) {
                 var fn = self.compileFile(pathname, options);
                 var layer = locals._yog;
-                layer && layer.load(id);
                 return fn.apply(this, arguments);
             }
         });
