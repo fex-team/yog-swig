@@ -104,10 +104,14 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
     var self = this;
     var pathname = layer.resolve(id);
 
-    layer.load(id);
     
     if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
+        layer.load(id);
         return this.compileFile(pathname, options);
+    }
+
+    if (attr.mode !== 'quickling'){
+        layer.load(id);
     }
 
     return function(locals) {
@@ -125,6 +129,9 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
             compiled: function(locals) {
                 var fn = self.compileFile(pathname, options);
                 var layer = locals._yog;
+                if (attr.mode === 'quickling'){
+                    layer.load(id);
+                }
                 return fn.apply(this, arguments);
             }
         });
