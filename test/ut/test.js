@@ -1,7 +1,6 @@
 var request = require('supertest');
 var express = require('express');
 var expect = require('chai').expect;
-var yog = require('yog');
 var app = express();
 var path = require('path');
 
