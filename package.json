@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "mocha --reporter dot --check-leaks test/",
+    "test": "mocha --reporter dot --check-leaks test/ut",
     "test-cov": "istanbul cover node_modules/mocha/bin/_mocha -- --reporter dot --check-leaks test/ut",
     "test-travis": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --reporter spec --check-leaks test/ut"
   },
@@ -30,11 +30,13 @@
     "swig": "1.3.2"
   },
   "devDependencies": {
-    "mocha": "~1.20.1",
+    "chai": "^1.10.0",
     "istanbul": "~0.2.14",
+    "mocha": "~1.20.1",
+    "supertest": "^0.15.0",
     "swig": "1.3.2",
-    "yog": "*",
-    "yog-view": "*",
-    "yog-bigpipe": "*"
+    "yog2-kernel": "*",
+    "yog-bigpipe": "*",
+    "yog-view": "*"
   }
 }

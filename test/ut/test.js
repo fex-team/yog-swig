@@ -6,7 +6,7 @@ var app = express();
 var path = require('path');
 
 var NODE_MODULES_PATH = path.join('../../', 'node_modules');
-var rApi = require(path.join(NODE_MODULES_PATH, '/yog/middleware/yog-resource-api'));
+var rApi = require(path.join(NODE_MODULES_PATH, '/yog2-kernel/plugins/views/mapjson.js'));
 var bigpipe = require('yog-bigpipe');
 
 app.use(rApi({
@@ -14,6 +14,7 @@ app.use(rApi({
 }));
 
 app.use(bigpipe());
+
 
 
 var layer = require(path.join(NODE_MODULES_PATH, '/yog-view/lib/layer.js'));
@@ -26,7 +27,7 @@ describe('tags', function () {
         '/html': {
             'tpl': '{%html%}test{%endhtml%}',
             'isString': true,
-            'expect': '<html>test<!--FIS_BIGPIPE_HOOK--></html>'
+            'expect': '<html >test<!--FIS_BIGPIPE_HOOK--></html>'
         },
         '/body': {
             'tpl': '{%body attrs=\'a="aaaa"\'%}test{%endbody%}',
@@ -48,13 +49,10 @@ describe('tags', function () {
             'isString': true,
             'expect': '',
             'cb': function (layer) {
-                var scripts = layer.getScripts();
-                expect(scripts).to.be.deep.equal({
-                    urls: [
-                        "/static/ns/mod.js"
-                    ],
-                    embed: []
-                });
+                var scripts = layer.getJs();
+                expect(scripts).to.be.deep.equal([
+                    "/static/ns/mod.js"
+                ]);
             }
         },
         '/widget': {
@@ -72,17 +70,20 @@ describe('tags', function () {
         var itr = tests[key];
         (function (key, itr) {
             app.get(key, function (req, res) {
+                app.fis = res.fis;
                 var options = {
                     views: path.join(__dirname, '/tpls')
                 };
-                var protocol = layer(res.fis, res.bigpipe);
-                options.locals = {_yog: protocol};
-                var swig = wrap(options, protocol).swig;
+                var protocol = layer(res, options);
+                var swig = (new wrap(app, options)).swig;
                 var output = '';
+                var compileOpt = {
+                    locals: {_yog: protocol}
+                };
                 if (itr['isString']) {
-                    output = swig.run(swig.compile(itr['tpl']));
+                    output = swig.run(swig.compile(itr['tpl'], compileOpt), {_yog: protocol});
                 } else {
-                    output = swig.renderFile(itr['tpl']);
+                    output = swig.renderFile(itr['tpl'], {_yog: protocol});
                 }
                 if (itr['cb']) itr['cb'](protocol);
                 res.end(output);

@@ -28,12 +28,8 @@ var swigInstance;
  * - `views` 模板根目录
  * - `loader` 模板加载器，默认自带，可选。
  *
- * layer 参数，为 yog-view 的中间层，用来扩展模板能力。
- * 比如通过 addScript, addStyle 添加的 js/css 会自动在页面开头结尾处才输出。
- *
  * 更多细节请查看 yog-view
  *
- * @return {Readable Stream}
  */
 var SwigWrap = module.exports = function SwigWrap(app, options) {
 
@@ -62,6 +58,11 @@ var SwigWrap = module.exports = function SwigWrap(app, options) {
     options.tags && Object.keys(options.tags).forEach(function (name){
         var t = options.tags[name];
         swig.setTag(name, t.parse, t.compile, t.ends, t.blockLevel || false);
+    });
+
+    options.filters && Object.keys(options.filters).forEach(function (name){
+        var t = options.filters[name];
+        swig.setFilter(name, t);
     });
 };
 
@@ -104,14 +105,9 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
     var self = this;
     var pathname = layer.resolve(id);
 
-    
-    if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
+    if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync' || layer.isPagelet) {
         layer.load(id);
         return this.compileFile(pathname, options);
-    }
-
-    if (attr.mode !== 'quickling'){
-        layer.load(id);
     }
 
     return function(locals) {
@@ -128,10 +124,7 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
 
             compiled: function(locals) {
                 var fn = self.compileFile(pathname, options);
-                var layer = locals._yog;
-                if (attr.mode === 'quickling'){
-                    layer.load(id);
-                }
+                locals._yog.load(id);
                 return fn.apply(this, arguments);
             }
         });
