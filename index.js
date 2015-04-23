@@ -7,7 +7,7 @@ var util = require('util');
 var Swig = require('swig').Swig;
 var loader = require('./lib/loader.js');
 var debuglog = require('debuglog')('yog-swig');
-var tags  = [
+var tags = [
     "script",
     "style",
     "html",
@@ -33,7 +33,7 @@ var swigInstance;
  */
 var SwigWrap = module.exports = function SwigWrap(app, options) {
 
-    if (swigInstance){
+    if (swigInstance) {
         debuglog('use swig instance cache');
         this.swig = swigInstance;
         return;
@@ -49,29 +49,33 @@ var SwigWrap = module.exports = function SwigWrap(app, options) {
     var swig = this.swig = swigInstance = new Swig(options);
 
     // 加载内置扩展
-    tags.forEach(function (tag){
+    tags.forEach(function (tag) {
         var t = require('./tags/' + tag);
         swig.setTag(tag, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
 
     // 加载用户扩展
-    options.tags && Object.keys(options.tags).forEach(function (name){
+    options.tags && Object.keys(options.tags).forEach(function (name) {
         var t = options.tags[name];
         swig.setTag(name, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
 
-    options.filters && Object.keys(options.filters).forEach(function (name){
+    options.filters && Object.keys(options.filters).forEach(function (name) {
         var t = options.filters[name];
         swig.setFilter(name, t);
     });
 };
 
-SwigWrap.prototype.makeStream = function(view, locals) {
+SwigWrap.prototype.cleanCache = function () {
+    this.swig.invalidateCache();
+};
+
+SwigWrap.prototype.makeStream = function (view, locals) {
     debuglog('create [%s] render stream', view);
     return new EngineStream(this.swig, view, locals);
 };
 
-var EngineStream = function(swig, view, locals){
+var EngineStream = function (swig, view, locals) {
     this.swig = swig;
     this.view = view;
     this.locals = locals;
@@ -81,15 +85,15 @@ var EngineStream = function(swig, view, locals){
 
 util.inherits(EngineStream, Readable);
 
-EngineStream.prototype._read = function() {
+EngineStream.prototype._read = function () {
     var self = this;
     var state = self._readableState;
-    if (this.reading){
+    if (this.reading) {
         return;
     }
     this.reading = true;
     debuglog('start render [%s]', this.view);
-    this.swig.renderFile(this.view, this.locals, function(error, output) {
+    this.swig.renderFile(this.view, this.locals, function (error, output) {
         if (error) {
             debuglog('render [%s] failed', self.view);
             return self.emit('error', error);
@@ -101,7 +105,7 @@ EngineStream.prototype._read = function() {
 };
 
 // 扩展swig内置函数，用于提供bigpipe支持
-Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) {
+Swig.prototype._w = Swig.prototype._widget = function (layer, id, attr, options) {
     var self = this;
     var pathname = layer.resolve(id);
 
@@ -110,7 +114,7 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
         return this.compileFile(pathname, options);
     }
 
-    return function(locals) {
+    return function (locals) {
         var container = attr['container'] || attr['for'];
 
         layer.addPagelet({
@@ -122,7 +126,7 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
             view: pathname,
             viewId: id,
 
-            compiled: function(locals) {
+            compiled: function (locals) {
                 var fn = self.compileFile(pathname, options);
                 locals._yog.load(id);
                 return fn.apply(this, arguments);
