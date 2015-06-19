@@ -1,6 +1,6 @@
 {
     "name": "yog-swig",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "custom swig template, add some tag or filter ",
     "main": "index.js",
     "directories": {
@@ -27,7 +27,7 @@
     "homepage": "https://github.com/fex-team/yog-swig",
     "dependencies": {
         "debuglog": "^1.0.1",
-        "swig": "1.3.2"
+        "swig": "1.4.2"
     },
     "devDependencies": {
         "express": "4.10.6",
