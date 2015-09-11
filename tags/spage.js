@@ -29,28 +29,31 @@ var ignore = 'ignore',
  * @param {literal}     [only]    Restricts to <strong>only</strong> passing the <code>with context</code> as local variables–the included template will not be aware of any other local variables in the parent template. For best performance, usage of this option is recommended if possible.
  * @param {literal}     [ignore missing] Will output empty string if not found instead of throwing an error.
  */
-exports.compile = function(compiler, args) {
+exports.compile = function (compiler, args) {
     var file = args.shift(),
         onlyIdx = args.indexOf(only),
         onlyCtx = onlyIdx !== -1 ? args.splice(onlyIdx, 1) : false,
         parentFile = (args.pop() || '').replace(/\\/g, '\\\\'),
         ignore = args[args.length - 1] === missing ? (args.pop()) : false,
-        w = args.filter(function(o) {
+        w = args.filter(function (o) {
             return !o.k;
-        }).join(' '),
+        }).join(','),
         w_args = {
             id: "spage",
             mode: "async"
         };
 
-    args.map(function(w) {
+    args.map(function (w) {
         if (w.k) w_args[w.k] = w.v;
     });
+
+    // 处理_VAR_:标记，将其转变为获取ctx变量
+    var w_args_str = JSON.stringify(w_args).replace(/"<<VAR:(.*?)>>"/g, "_ctx.$1");
 
     return (ignore ? '  try {\n' : '') +
         'var w_args = ' + JSON.stringify(w_args) + ';' +
         'if (_ctx.isQuickingMode){w_args.mode="quickling"}' +
-        '_output += _swig._w(_ctx._yog, '+ file+', w_args, {' +
+        '_output += _swig._w(_ctx._yog, ' + file + ', w_args, {' +
         'resolveFrom: "' + parentFile + '"' +
         '})(' +
         ((onlyCtx && w) ? w : (!w ? '_ctx' : '_utils.extend({}, _ctx, ' + w + ')')) +
@@ -58,10 +61,10 @@ exports.compile = function(compiler, args) {
         (ignore ? '} catch (e) {}\n' : '');
 };
 
-exports.parse = function(str, line, parser, types, stack, opts) {
+exports.parse = function (str, line, parser, types, stack, opts) {
     var file, w, k;
 
-    parser.on(types.STRING, function(token) {
+    parser.on(types.STRING, function (token) {
 
         if (!file) {
             file = token.match;
@@ -78,16 +81,27 @@ exports.parse = function(str, line, parser, types, stack, opts) {
             out.v = token.match.replace(/^("|')?(.*)\1$/g, '$2');
             out.k = k;
             this.out.push(out);
-            v = ''; //reset
+            k = ''; //reset
         }
 
     });
 
-    parser.on(types.VAR, function(token) {
+    parser.on(types.VAR, function (token) {
         if (!file) {
             k = '';
             file = token.match;
             return true;
+        }
+
+        if (~attrs.indexOf(k)) {
+            var out = {
+                v: '',
+                k: ''
+            };
+            out.v = '<<VAR:' + token.match + '>>';
+            out.k = k;
+            this.out.push(out);
+            k = '';
         }
 
         if (~attrs.indexOf(token.match)) {
@@ -124,7 +138,7 @@ exports.parse = function(str, line, parser, types, stack, opts) {
         return true;
     });
 
-    parser.on('end', function() {
+    parser.on('end', function () {
         this.out.push(opts.filename || null);
     });
 

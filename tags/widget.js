@@ -37,7 +37,7 @@ exports.compile = function (compiler, args) {
         ignore = args[args.length - 1] === missing ? (args.pop()) : false,
         w = args.filter(function (o) {
             return !o.k;
-        }).join(' '),
+        }).join(','),
         w_args = {};
 
     args.map(function (w) {
