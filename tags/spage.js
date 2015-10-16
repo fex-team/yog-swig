@@ -1,7 +1,7 @@
 var ignore = 'ignore',
     missing = 'missing',
     only = 'only',
-    attrs = ["id", "mode", "group", "for", "model"];
+    attrs = ["id", "mode", "group", "for", "model", "lazy", "cache"];
 
 /**
  * Includes a template partial in place. The template is rendered within the current locals variable context.

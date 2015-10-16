@@ -109,7 +109,7 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, id, attr, options)
     var self = this;
     var pathname = layer.resolve(id);
 
-    if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync' || layer.isPagelet) {
+    if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
         layer.load(id);
         return this.compileFile(pathname, options);
     }
@@ -121,6 +121,7 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, id, attr, options)
             container: container,
             model: attr.model,
             id: attr.id,
+            lazy: attr.lazy === 'true',
             mode: attr.mode,
             locals: locals,
             view: pathname,
