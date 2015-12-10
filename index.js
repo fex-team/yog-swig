@@ -115,9 +115,8 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, id, attr, options)
     }
 
     return function (locals) {
-        var container = attr['container'] || attr['for'];
-
-        layer.addPagelet({
+ 	var container = attr['container'] || attr['for'];
+        var pageletOptions = {
             container: container,
             model: attr.model,
             id: attr.id,
@@ -126,14 +125,23 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, id, attr, options)
             locals: locals,
             view: pathname,
             viewId: id,
-
             compiled: function (locals) {
                 var fn = self.compileFile(pathname, options);
                 locals._yog.load(id);
                 return fn.apply(this, arguments);
             }
-        });
+        }
 
-        return container ? '' : '<div id="' + attr.id + '"></div>';
+        if (layer.bigpipe.isSpiderMode) {
+            var syncPagelet = new layer.bigpipe.Pagelet(pageletOptions)
+            syncPagelet.start(layer.bigpipe.sources[attr.id]);
+            return container ? syncPagelet.html : '<div id="' + attr.id + '"> ' + syncPagelet.html + '</div>';
+        }
+        else {
+            var container = attr['container'] || attr['for'];
+            layer.addPagelet(pageletOptions);
+            return container ? '' : '<div id="' + attr.id + '"></div>';
+        }
+
     };
 };
