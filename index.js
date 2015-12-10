@@ -115,7 +115,7 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, id, attr, options)
     }
 
     return function (locals) {
- 	var container = attr['container'] || attr['for'];
+        var container = attr['container'] || attr['for'];
         var pageletOptions = {
             container: container,
             model: attr.model,
@@ -134,7 +134,7 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, id, attr, options)
 
         if (layer.bigpipe.isSpiderMode) {
             var syncPagelet = new layer.bigpipe.Pagelet(pageletOptions)
-            syncPagelet.start(layer.bigpipe.sources[attr.id]);
+            syncPagelet.start(layer.bigpipe.pageletData[attr.id], true);
             return container ? syncPagelet.html : '<div id="' + attr.id + '"> ' + syncPagelet.html + '</div>';
         }
         else {
