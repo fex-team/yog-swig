@@ -8,20 +8,49 @@ var Swig = require('swig').Swig;
 var loader = require('./lib/loader.js');
 var debuglog = require('debuglog')('yog-swig');
 var tags = [
-    "script",
-    "style",
-    "html",
-    "body",
-    "require",
-    "uri",
-    "widget",
-    "head",
-    "feature",
-    "featureelse",
-    "spage"
+    'script',
+    'style',
+    'html',
+    'body',
+    'require',
+    'uri',
+    'widget',
+    'head',
+    'feature',
+    'featureelse',
+    'spage'
 ];
 
 var swigInstance;
+
+var EngineStream = function (swig, view, locals) {
+    this.swig = swig;
+    this.view = view;
+    this.locals = locals;
+    this.reading = false;
+    Readable.call(this);
+};
+
+util.inherits(EngineStream, Readable);
+
+EngineStream.prototype._read = function () {
+    var self = this;
+    // var state = self._readableState;
+    if (this.reading) {
+        return;
+    }
+    this.reading = true;
+    debuglog('start render [%s]', this.view);
+    this.swig.renderFile(this.view, this.locals, function (error, output) {
+        if (error) {
+            debuglog('render [%s] failed', self.view);
+            return self.emit('error', error);
+        }
+        debuglog('render [%s] succ', self.view);
+        self.push(output);
+        self.push(null);
+    });
+};
 
 /**
  * Opitions 说明
@@ -75,34 +104,6 @@ SwigWrap.prototype.makeStream = function (view, locals) {
     return new EngineStream(this.swig, view, locals);
 };
 
-var EngineStream = function (swig, view, locals) {
-    this.swig = swig;
-    this.view = view;
-    this.locals = locals;
-    this.reading = false;
-    Readable.call(this);
-};
-
-util.inherits(EngineStream, Readable);
-
-EngineStream.prototype._read = function () {
-    var self = this;
-    var state = self._readableState;
-    if (this.reading) {
-        return;
-    }
-    this.reading = true;
-    debuglog('start render [%s]', this.view);
-    this.swig.renderFile(this.view, this.locals, function (error, output) {
-        if (error) {
-            debuglog('render [%s] failed', self.view);
-            return self.emit('error', error);
-        }
-        debuglog('render [%s] succ', self.view);
-        self.push(output);
-        self.push(null);
-    });
-};
 
 // 扩展swig内置函数，用于提供bigpipe支持
 Swig.prototype._w = Swig.prototype._widget = function (layer, id, attr, options) {
@@ -130,18 +131,17 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, id, attr, options)
                 locals._yog.load(id);
                 return fn.apply(this, arguments);
             }
-        }
+        };
 
         if (layer.bigpipe.isSpiderMode) {
-            var syncPagelet = new layer.bigpipe.Pagelet(pageletOptions)
+            var syncPagelet = new layer.bigpipe.Pagelet(pageletOptions);
             syncPagelet.start(layer.bigpipe.pageletData[attr.id], true);
             return container ? syncPagelet.html : '<div id="' + attr.id + '"> ' + syncPagelet.html + '</div>';
         }
         else {
-            var container = attr['container'] || attr['for'];
+            container = attr['container'] || attr['for'];
             layer.addPagelet(pageletOptions);
             return container ? '' : '<div id="' + attr.id + '"></div>';
         }
-
     };
 };
