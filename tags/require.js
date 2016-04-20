@@ -13,14 +13,20 @@ var exports = module.exports;
  * @param {string|var} id  the resource `id` of the FIS system.
  */
 exports.compile = function(compiler, args, content, parents, options, blockName) {
-    var code = '_ctx._yog.load(' + args.pop() + ');'
+    var code = '_ctx._yog.load(' + args[0] + ', ' + args[1] + ');'
     return code;
 };
 
 exports.parse = function(str, line, parser, types) {
     parser.on(types.STRING, function (token) {
-        var self = this;
-        self.out.push(token.match);
+        this.out.unshift(token.match);
+    });
+    parser.on(types.VAR, function (token) {
+        if (token.match === 'external') {
+            this.out.push(true);
+        }else {
+            this.out.unshift('_ctx.' + token.match);
+        }
     });
     return true;
 };

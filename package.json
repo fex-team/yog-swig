@@ -1,6 +1,6 @@
 {
     "name": "yog-swig",
-    "version": "0.3.1",
+    "version": "0.4.0",
     "description": "custom swig template, add some tag or filter ",
     "main": "index.js",
     "directories": {
