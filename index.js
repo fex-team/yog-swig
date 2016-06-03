@@ -63,13 +63,16 @@ EngineStream.prototype._read = function() {
  */
 var SwigWrap = module.exports = function SwigWrap(app, options) {
     options.renderCacheOptions = options.renderCacheOptions || {};
+    var max = options.renderCacheOptions.max || 1000;
+    var pruneRate = options.renderCacheOptions.pruneRate || 10;
     var renderCaches = LRU({
-        max: options.renderCacheOptions.max || 5000,
-        length: function (n, key) {
+        max: max,
+        length: function(n, key) {
             return n.length;
         },
         maxAge: options.renderCacheOptions.maxAge || 1000 * 60 * 60
     });
+    renderCaches.setCount = 0;
     if (swigInstance) {
         debuglog('use swig instance cache');
         this.swig = swigInstance;
@@ -104,8 +107,17 @@ var SwigWrap = module.exports = function SwigWrap(app, options) {
 
     swig.renderCache = options.renderCache || {
         get: renderCaches.get.bind(renderCaches),
-        set: renderCaches.set.bind(renderCaches),
-        clean: function () {
+        set: function (key, value) {
+            // 设置过多缓存时，考虑清理老缓存请求次数
+            if (renderCaches.setCount > pruneRate * max) {
+                renderCaches.prune();
+                renderCaches.setCount = 0;
+                debuglog('prune widget cache');
+            }
+            renderCaches.setCount++;
+            return renderCaches.set(key, value);
+        },
+        clean: function() {
             console.log('items', renderCaches.itemCount, renderCaches.length);
             renderCaches.reset();
         }
@@ -116,8 +128,7 @@ SwigWrap.prototype.cleanCache = function() {
     try {
         this.swig.invalidateCache();
         this.swig.renderCache.clean && this.swig.renderCache.clean();
-    } catch (e) {
-    }
+    } catch (e) {}
 };
 
 SwigWrap.prototype.makeStream = function(view, locals) {
@@ -138,15 +149,24 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
             var cacheContent = self.renderCache.get(cacheKey);
             if (cacheContent) {
                 debuglog('load render cache by [%s]', cacheKey);
-                return cacheContent;
+                return function (locals) {
+                    return cacheContent;
+                };
             }
         }
         var res = this.compileFile(pathname, options);
-        if (cacheKey) {
-            debuglog('set render cache [%s]', cacheKey);
-            self.renderCache.set(cacheKey, res);
+        var newRes = function(locals) {
+            var contents = res(locals);
+            if (cacheKey) {
+                debuglog('set render cache [%s]', cacheKey);
+                self.renderCache.set(cacheKey, contents);
+            }
+            return contents;
         }
-        return res;
+        newRes.tokens = res.tokens;
+        newRes.parent = res.parent;
+        newRes.blocks = res.blocks;
+        return newRes;
     }
 
     return function(locals) {
