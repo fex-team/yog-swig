@@ -63,8 +63,8 @@ EngineStream.prototype._read = function() {
  */
 var SwigWrap = module.exports = function SwigWrap(app, options) {
     options.renderCacheOptions = options.renderCacheOptions || {};
-    var max = options.renderCacheOptions.max || 1000;
-    var pruneRate = options.renderCacheOptions.pruneRate || 10;
+    var max = options.renderCacheOptions.max || 20 * 1024 * 1024;
+    var pruneRate = options.renderCacheOptions.pruneRate || 1;
     var renderCaches = LRU({
         max: max,
         length: function(n, key) {
@@ -118,7 +118,6 @@ var SwigWrap = module.exports = function SwigWrap(app, options) {
             return renderCaches.set(key, value);
         },
         clean: function() {
-            console.log('items', renderCaches.itemCount, renderCaches.length);
             renderCaches.reset();
         }
     }
