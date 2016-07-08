@@ -75,8 +75,21 @@ exports.parse = function (str, line, parser, types, stack, opts) {
             out.k = k;
             this.out.push(out);
             k = ''; //reset
+            return
         }
+    });
 
+    parser.on(types.BOOL, function (token) {
+        if (k && ~attrs.indexOf(k)) {
+            var out = {
+                v: '',
+                k: ''
+            };
+            out.v = token.match === 'true';
+            out.k = k;
+            this.out.push(out);
+            k = ''; // reset
+        }
     });
 
     parser.on(types.VAR, function (token) {
@@ -86,7 +99,7 @@ exports.parse = function (str, line, parser, types, stack, opts) {
             return true;
         }
 
-        if (~attrs.indexOf(k)) {
+        if (k && ~attrs.indexOf(k)) {
             var out = {
                 v: '',
                 k: ''
@@ -95,6 +108,7 @@ exports.parse = function (str, line, parser, types, stack, opts) {
             out.k = k;
             this.out.push(out);
             k = '';
+            return false;
         }
 
         if (~attrs.indexOf(token.match)) {
@@ -126,6 +140,10 @@ exports.parse = function (str, line, parser, types, stack, opts) {
 
         if (this.prevToken.match === ignore) {
             throw new Error('Expected "' + missing + '" on line ' + line + ' but found "' + token.match + '".');
+        }
+
+        if (k) {
+            throw new Error('Unexpected token "' + token.match + '" on line ' + line + '.');
         }
 
         return true;
