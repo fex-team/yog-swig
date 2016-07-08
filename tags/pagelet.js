@@ -29,37 +29,29 @@ exports.parse = function (str, line, parser, types) {
         return false;
     }
 
-    // 用于获取被赋值的字符串属性
-    parser.on(types.STRING, function (token) {
-        var ret = parseToken(token, this.prevToken, this.out, function (match) {
+    [{
+        type: types.STRING,
+        parser: function (match) {
             return match.replace(/^("|')?(.*)\1$/g, '$2');
-        });
-        if (ret) {
-            return;
         }
-        throw new Error('Unexpected token "' + token.match + '" on line ' + line + '.');
-    });
-
-    parser.on(types.BOOL, function (token) {
-        // 用于获取被赋值的布尔值
-        var ret = parseToken(token, this.prevToken, this.out, function (match) {
+    }, {
+        type: types.BOOL,
+        parser: function (match) {
             return match === 'true';
-        })
-        if (ret) {
-            return;
         }
-        throw new Error('Unexpected token "' + token.match + '" on line ' + line + '.');
-    });
-
-    parser.on(types.NUMBER, function (token) {
-        // 用于获取被赋值的数值
-        var ret = parseToken(token, this.prevToken, this.out, function (match) {
+    }, {
+        type: types.NUMBER,
+        parser: function (match) {
             return match;
-        });
-        if (ret) {
-            return;
         }
-        throw new Error('Unexpected token "' + token.match + '" on line ' + line + '.');
+    }].forEach(function (parseValue) {
+        parser.on(parseValue.type, function (token) {
+            var ret = parseToken(token, this.prevToken, this.out, parseValue.parser);
+            if (ret) {
+                return;
+            }
+            throw new Error('Unexpected token "' + token.match + '" on line ' + line + '.');
+        });
     });
 
     parser.on(types.VAR, function (token) {
