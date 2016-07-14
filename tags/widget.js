@@ -44,14 +44,14 @@ exports.compile = function (compiler, args) {
         if (w.k && w.k !== 'data')  {
             w_args[w.k] = w.v;
         } else if (w.k == 'data') {
-            withData = JSON.stringify(w.v).replace(/"<<VAR:(.*?)>>"/g, '(typeof _ctx.$1 !== "undefined" && typeof _ctx.$1 !== "null") ? _ctx.$1 : ((typeof $1 !== "undefined" && typeof $1 !== "null") ? $1 : "")');
+            withData = JSON.stringify(w.v).replace(/"<<VAR:(.*?)>>"/g, '((typeof _ctx.$1 !== "undefined" && typeof _ctx.$1 !== "null") ? _ctx.$1 : ((typeof $1 !== "undefined" && typeof $1 !== "null") ? $1 : ""))');
         }
     });
     if (!withData) {
         withData = w;
     }
     // 处理_VAR_:标记，将其转变为获取ctx变量
-    var w_args_str = JSON.stringify(w_args).replace(/"<<VAR:(.*?)>>"/g, '(typeof _ctx.$1 !== "undefined" && typeof _ctx.$1 !== "null") ? _ctx.$1 : ((typeof $1 !== "undefined" && typeof $1 !== "null") ? $1 : "")');
+    var w_args_str = JSON.stringify(w_args).replace(/"<<VAR:(.*?)>>"/g, '((typeof _ctx.$1 !== "undefined" && typeof _ctx.$1 !== "null") ? _ctx.$1 : ((typeof $1 !== "undefined" && typeof $1 !== "null") ? $1 : ""))');
     return (ignore ? '  try {\n' : '') +
         '_output += _swig._w(_ctx._yog, ' + file + ',' + w_args_str + ', {' +
         'resolveFrom: "' + parentFile + '"' +

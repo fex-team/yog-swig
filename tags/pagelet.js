@@ -6,7 +6,7 @@ exports.compile = function (compiler, args, content, parents, options, blockName
         attr[args[i].k] = args[i].v;
     }
     attr.mode = attr.mode || 'async';
-    var attrStr = JSON.stringify(attr).replace(/"<<VAR:(.*?)>>"/g, '(typeof _ctx.$1 !== "undefined" && typeof _ctx.$1 !== "null") ? _ctx.$1 : ((typeof $1 !== "undefined" && typeof $1 !== "null") ? $1 : "")');
+    var attrStr = JSON.stringify(attr).replace(/"<<VAR:(.*?)>>"/g, '((typeof _ctx.$1 !== "undefined" && typeof _ctx.$1 !== "null") ? _ctx.$1 : ((typeof $1 !== "undefined" && typeof $1 !== "null") ? $1 : ""))');
     var compiledContent = compiler(content, parents, options, blockName);
     var output = '_output += _swig._w(_ctx._yog, function(_ctx) { var _output = ""; ' + compiledContent +
         ';return _output;}, ' + attrStr + ', ' + JSON.stringify(options) + ')(_ctx);';
