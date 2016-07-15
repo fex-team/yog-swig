@@ -152,7 +152,7 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, subTemplate, attr,
         subTemplate;
     var cacheKey = attr.cache ? id + '_' + attr.cache : null;
 
-    function getCompiled() {
+    function getCompiled(currentLayer) {
         if (cacheKey) {
             var cacheContent = self.renderCache.get(cacheKey);
             if (cacheContent) {
@@ -164,7 +164,7 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, subTemplate, attr,
         }
         var fn = subTemplate;
         if (typeof fn !== 'function') {
-            fn = self._idToCompiled(layer, subTemplate, options);
+            fn = self._idToCompiled(currentLayer, subTemplate, options);
         }
         var newFn = function (locals) {
             var contents = fn(locals);
@@ -181,7 +181,7 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, subTemplate, attr,
     }
 
     if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
-        return getCompiled();
+        return getCompiled(layer);
     }
 
     return function (locals) {
@@ -193,8 +193,11 @@ Swig.prototype._w = Swig.prototype._widget = function (layer, subTemplate, attr,
             lazy: attr.lazy === 'true',
             mode: attr.mode,
             locals: locals,
-            viewId: id,
-            compiled: getCompiled()
+            // view: pathname,
+            // viewId: id,
+            compiled: function (locals) {
+                return getCompiled(locals._yog)(locals);
+            }
         };
 
         if (layer.bigpipe.isSpiderMode) {

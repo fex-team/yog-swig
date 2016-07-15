@@ -43,7 +43,7 @@ exports.compile = function (compiler, args) {
     args.forEach(function (w) {
         if (w.k && w.k !== 'data')  {
             w_args[w.k] = w.v;
-        } else if (w.k == 'data') {
+        } else if (w.k === 'data') {
             withData = JSON.stringify(w.v).replace(/"<<VAR:(.*?)>>"/g, '((typeof _ctx.$1 !== "undefined" && typeof _ctx.$1 !== "null") ? _ctx.$1 : ((typeof $1 !== "undefined" && typeof $1 !== "null") ? $1 : ""))');
         }
     });
