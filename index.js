@@ -19,12 +19,13 @@ var tags = [
     'head',
     'feature',
     'featureelse',
-    'spage'
+    'spage',
+    'pagelet'
 ];
 
 var swigInstance;
 
-var EngineStream = function(swig, view, locals) {
+var EngineStream = function (swig, view, locals) {
     this.swig = swig;
     this.view = view;
     this.locals = locals;
@@ -34,7 +35,7 @@ var EngineStream = function(swig, view, locals) {
 
 util.inherits(EngineStream, Readable);
 
-EngineStream.prototype._read = function() {
+EngineStream.prototype._read = function () {
     var self = this;
     // var state = self._readableState;
     if (this.reading) {
@@ -42,7 +43,7 @@ EngineStream.prototype._read = function() {
     }
     this.reading = true;
     debuglog('start render [%s]', this.view);
-    this.swig.renderFile(this.view, this.locals, function(error, output) {
+    this.swig.renderFile(this.view, this.locals, function (error, output) {
         if (error) {
             debuglog('render [%s] failed', self.view);
             return self.emit('error', error);
@@ -67,7 +68,7 @@ var SwigWrap = module.exports = function SwigWrap(app, options) {
     var pruneRate = options.renderCacheOptions.pruneRate || 1;
     var renderCaches = LRU({
         max: max,
-        length: function(n, key) {
+        length: function (n, key) {
             return n.length;
         },
         maxAge: options.renderCacheOptions.maxAge || 1000 * 60 * 60
@@ -89,18 +90,18 @@ var SwigWrap = module.exports = function SwigWrap(app, options) {
     var swig = this.swig = swigInstance = new Swig(options);
 
     // 加载内置扩展
-    tags.forEach(function(tag) {
+    tags.forEach(function (tag) {
         var t = require('./tags/' + tag);
         swig.setTag(tag, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
 
     // 加载用户扩展
-    options.tags && Object.keys(options.tags).forEach(function(name) {
+    options.tags && Object.keys(options.tags).forEach(function (name) {
         var t = options.tags[name];
         swig.setTag(name, t.parse, t.compile, t.ends, t.blockLevel || false);
     });
 
-    options.filters && Object.keys(options.filters).forEach(function(name) {
+    options.filters && Object.keys(options.filters).forEach(function (name) {
         var t = options.filters[name];
         swig.setFilter(name, t);
     });
@@ -117,33 +118,41 @@ var SwigWrap = module.exports = function SwigWrap(app, options) {
             renderCaches.setCount++;
             return renderCaches.set(key, value);
         },
-        clean: function() {
+        clean: function () {
             renderCaches.reset();
         }
-    }
+    };
 };
 
-SwigWrap.prototype.cleanCache = function() {
+SwigWrap.prototype.cleanCache = function () {
     try {
         this.swig.invalidateCache();
         this.swig.renderCache.clean && this.swig.renderCache.clean();
-    } catch (e) {}
+    }
+    catch (e) {}
 };
 
-SwigWrap.prototype.makeStream = function(view, locals) {
+SwigWrap.prototype.makeStream = function (view, locals) {
     debuglog('create [%s] render stream', view);
     return new EngineStream(this.swig, view, locals);
 };
 
 
-// 扩展swig内置函数，用于提供bigpipe支持
-Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) {
-    var self = this;
+Swig.prototype._idToCompiled = function (layer, id, options) {
     var pathname = layer.resolve(id);
+    layer.load(id);
+    return this.compileFile(pathname, options);
+};
+
+// 扩展swig内置函数，用于提供bigpipe支持
+Swig.prototype._w = Swig.prototype._widget = function (layer, subTemplate, attr, options) {
+    var self = this;
+    var id = typeof subTemplate === 'function' ?
+        (options.filename || options.resolveFrom + '_' + attr.id) :
+        subTemplate;
     var cacheKey = attr.cache ? id + '_' + attr.cache : null;
 
-    if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
-        layer.load(id);
+    function getCompiled(currentLayer) {
         if (cacheKey) {
             var cacheContent = self.renderCache.get(cacheKey);
             if (cacheContent) {
@@ -153,23 +162,30 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
                 };
             }
         }
-        var res = this.compileFile(pathname, options);
-        var newRes = function(locals) {
-            var contents = res(locals);
+        var fn = subTemplate;
+        if (typeof fn !== 'function') {
+            fn = self._idToCompiled(currentLayer, subTemplate, options);
+        }
+        var newFn = function (locals) {
+            var contents = fn(locals);
             if (cacheKey) {
                 debuglog('set render cache [%s]', cacheKey);
                 self.renderCache.set(cacheKey, contents);
             }
             return contents;
-        }
-        newRes.tokens = res.tokens;
-        newRes.parent = res.parent;
-        newRes.blocks = res.blocks;
-        return newRes;
+        };
+        newFn.tokens = fn.tokens;
+        newFn.parent = fn.parent;
+        newFn.blocks = fn.blocks;
+        return newFn;
     }
 
-    return function(locals) {
-        var container = attr['container'] || attr['for'];
+    if (!layer.supportBigPipe() || !attr.mode || attr.mode === 'sync') {
+        return getCompiled(layer);
+    }
+
+    return function (locals) {
+        var container = attr.container || attr.for;
         var pageletOptions = {
             container: container,
             model: attr.model,
@@ -177,12 +193,10 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
             lazy: attr.lazy === 'true',
             mode: attr.mode,
             locals: locals,
-            view: pathname,
-            viewId: id,
-            compiled: function(locals) {
-                var fn = self.compileFile(pathname, options);
-                locals._yog.load(id);
-                return fn.apply(this, arguments);
+            // view: pathname,
+            // viewId: id,
+            compiled: function (locals) {
+                return getCompiled(locals._yog)(locals);
             }
         };
 
@@ -190,8 +204,9 @@ Swig.prototype._w = Swig.prototype._widget = function(layer, id, attr, options) 
             var syncPagelet = new layer.bigpipe.Pagelet(pageletOptions);
             syncPagelet.start(layer.bigpipe.pageletData[attr.id], true);
             return container ? syncPagelet.html : '<div id="' + attr.id + '"> ' + syncPagelet.html + '</div>';
-        } else {
-            container = attr['container'] || attr['for'];
+        }
+        else {
+            container = attr.container || attr.for;
             layer.addPagelet(pageletOptions);
             return container ? '' : '<div id="' + attr.id + '"></div>';
         }
